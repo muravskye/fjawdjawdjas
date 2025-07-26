@@ -14,11 +14,11 @@ app.secret_key = os.urandom(24)
 # Your API Keys (LOAD FROM ENVIRONMENT VARIABLES IN PRODUCTION!)
 # It's highly recommended to load these from environment variables (e.g., os.environ.get("APIFY_API_TOKEN"))
 # instead of hardcoding them, especially for production.
-APIFY_API_TOKEN = "" # Replace with your Apify API token
+APIFY_API_TOKEN = os.environ.get("APIFY_API_TOKEN") # Replace with your Apify API token
 # Note: The provided key format 'sk-proj-...' is typically for Google Gemini.
 # If you intend to use OpenAI, please ensure you have a valid OpenAI API key.
 # The code targets the OpenAI endpoint, assuming you will use an OpenAI key.
-AI_API_KEY = ""
+AI_API_KEY = os.environ.get("AI_API_KEY")
 
 # Number of recent posts to scrape for the profile
 NUM_POSTS_TO_SCRAPE = 5
