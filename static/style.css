@@ -1,0 +1,13 @@
+/* style.css */
+
+/* Custom font-family for Inter */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Additional custom styles if needed beyond Tailwind */
+/* For example, if you want specific hover effects not covered by Tailwind */
+/* .my-custom-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+} */
