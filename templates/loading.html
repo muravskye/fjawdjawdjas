@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading...</title>
+    <!-- Tailwind CSS CDN for utility classes -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom CSS for overall styling -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body class="font-inter">
+    <div class="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-pink-300 to-purple-400 p-4">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md text-center">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Analyzing Profile...</h2>
+            <div class="w-full bg-gray-200 rounded-full h-4 mb-4 overflow-hidden">
+                <div
+                    id="progressBar"
+                    class="bg-purple-600 h-full rounded-full transition-all duration-100 ease-out"
+                    style="width: 0%;"
+                ></div>
+            </div>
+            <p id="loadingText" class="text-gray-600 transition-opacity duration-500 ease-in-out">Please wait while we gather data and generate insights.</p>
+        </div>
+    </div>
+
+    <!-- Link to the JavaScript file -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

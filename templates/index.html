@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Analyzer</title>
+    <!-- Tailwind CSS CDN for utility classes -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom CSS for overall styling -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body class="font-inter">
+    <div class="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-pink-300 to-purple-400 p-4">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md text-center">
+            <h1 class="text-4xl font-extrabold text-gray-800 mb-6">Instagram Analyzer</h1>
+            <form action="{{ url_for('analyze') }}" method="POST" class="flex flex-col gap-4">
+                <input
+                    type="text"
+                    name="username" id="usernameInput"
+                    placeholder="Enter Instagram Username (e.g., happy.outings)"
+                    class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                />
+                <button
+                    type="submit"
+                    class="bg-purple-600 text-white py-3 px-6 rounded-lg font-bold text-lg hover:bg-purple-700 transition-colors duration-300 shadow-md"
+                >
+                    Analyze Profile
+                </button>
+            </form>
+            <p id="errorMessage" class="text-red-600 mt-4 {% if error_message %}block{% else %}hidden{% endif %}">{{ error_message }}</p>
+        </div>
+    </div>
+</body>
+</html>
