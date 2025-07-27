@@ -16,11 +16,9 @@ app.secret_key = os.urandom(24)
 # Your API Keys (LOAD FROM ENVIRONMENT VARIABLES IN PRODUCTION!)
 # It's highly recommended to load these from environment variables (e.g., os.environ.get("APIFY_API_TOKEN"))
 # instead of hardcoding them, especially for production.
-APIFY_API_TOKEN = "" # Replace with your Apify API token
-# Note: The provided key format 'sk-proj-...' is typically for Google Gemini.
-# If you intend to use OpenAI, please ensure you have a valid OpenAI API key.
-# The code targets the OpenAI endpoint, assuming you will use an OpenAI key.
-AI_API_KEY = "" # UPDATED API KEY
+# Use os.environ.get() to fetch environment variables
+APIFY_API_TOKEN = os.environ.get("APIFY_API_TOKEN", "") # Get from environment, fallback to empty string
+AI_API_KEY = os.environ.get("AI_API_KEY", "") # Get from environment, fallback to empty string
 
 # Number of recent posts to scrape for the profile
 NUM_POSTS_TO_SCRAPE = 5
@@ -220,6 +218,12 @@ def get_ai_analysis(data):
     # Update progress for AI analysis
     update_progress(data['profile']['username'], 'Analyzing with AI...', 80)
 
+    # Validate API key before making the request
+    if not AI_API_KEY or not AI_API_KEY.strip():
+        error_message = "AI_API_KEY is not set or is empty. Please ensure it's configured correctly in environment variables."
+        print(f"Server: Error: {error_message}")
+        return {"text": f"AI analysis failed: {error_message}", "score": 0}
+
     # Determine account scale for tailored advice and scoring
     followers = data['profile']['followersCount']
     account_scale_description = ""
@@ -326,11 +330,19 @@ def get_ai_analysis(data):
             "max_tokens": 3000 # Increased max_tokens significantly to allow for much more detailed output
         }
 
-        api_url = "https://api.openai.com/v1/chat/completions" # OpenAI Chat Completions endpoint
+        # Strip any leading/trailing whitespace from the API key
+        clean_api_key = AI_API_KEY.strip()
+
+        if not clean_api_key:
+            error_message = "AI_API_KEY is not set or is empty. Please ensure it's configured correctly in environment variables on Render."
+            print(f"Server: Error: {error_message}")
+            return {"text": f"AI analysis failed: {error_message}", "score": 0}
+
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Bearer {AI_API_KEY}'
+            'Authorization': f'Bearer {clean_api_key}'
         }
+        print(f"Server: Sending Authorization header: Bearer {clean_api_key[:5]}...{clean_api_key[-5:]}") # Log partial key for security
 
         response = requests.post(api_url, headers=headers, data=json.dumps(payload))
         response.raise_for_status() # Raise an exception for HTTP errors (4xx or 5xx)
@@ -404,6 +416,12 @@ def perform_analysis():
     if not username:
         return jsonify({"status": "error", "message": "No username in session."}), 400
 
+    # Validate Apify API key before proceeding with scraping
+    if not APIFY_API_TOKEN or not APIFY_API_TOKEN.strip():
+        session['error_message'] = "Apify API Token is not set or is empty. Please configure it in environment variables."
+        update_progress(username, 'Error: Apify API Key Missing!', 0)
+        return jsonify({"status": "error", "message": session['error_message']}), 500
+
     saved_profiles = load_saved_profiles()
     if username in saved_profiles:
         print(f"Server: Profile data for {username} found in saved_profiles.json. Using cached data.")
@@ -418,10 +436,10 @@ def perform_analysis():
     scraped_data = scrape_instagram_profile_and_comments(username)
 
     if not scraped_data:
-        session['error_message'] = "Failed to retrieve Instagram data. Profile might be private or non-existent."
+        session['error_message'] = "Failed to retrieve Instagram data. Profile might be private or non-existent, or Apify API issue."
         # Set global progress to an error state
         update_progress(username, 'Error during data retrieval!', 0)
-        return jsonify({"status": "error", "message": "Data retrieval failed."}), 500
+        return jsonify({"status": "error", "message": session['error_message']}), 500
 
     # Perform AI analysis
     ai_analysis_result = get_ai_analysis(scraped_data)
