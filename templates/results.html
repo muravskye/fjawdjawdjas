@@ -24,106 +24,89 @@
             </div>
             {% endif %}
 
-            <!-- Profile Info -->
-            <div class="mb-8 p-6 bg-purple-50 rounded-lg shadow-inner">
-                <h3 class="text-2xl font-semibold text-purple-700 mb-4">📊 Profile Information</h3>
+            <!-- Profile Information Section -->
+            <div class="bg-gray-50 p-6 rounded-lg shadow-inner mb-6">
+                <h3 class="text-2xl font-semibold text-gray-700 mb-4">📊 Profile Information</h3>
                 {% if profile %}
-                <div class="flex items-center mb-4">
-                    <img id="profilePic" src="{{ profile.profilePicUrl }}" alt="Profile" class="w-24 h-24 rounded-full mr-4 border-4 border-purple-300 shadow-md" onerror="this.src='https://placehold.co/150x150/FF69B4/FFFFFF?text=Profile+Pic';" />
+                <div class="flex items-center space-x-4 mb-4">
+                    {# Use profile.profilePicBase64 for direct embedding, fallback to original URL or placeholder #}
+                    <img src="{{ profile.profilePicBase64 if profile.profilePicBase64 else profile.profilePicUrl }}"
+                         onerror="this.onerror=null;this.src='https://placehold.co/150x150/FF69B4/FFFFFF?text=Profile+Pic';"
+                         alt="Profile Picture" class="w-20 h-20 rounded-full border-2 border-purple-400 shadow-md">
                     <div>
-                        <p id="fullName" class="text-xl font-bold text-gray-900">{{ profile.fullName }}</p>
-                        <p id="usernameDisplay" class="text-gray-600">@{{ profile.username }}</p>
-                        <a id="profileUrl" href="{{ profile.profileUrl }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">View Profile</a>
+                        <p class="text-xl font-bold text-gray-800">{{ profile.fullName }}</p>
+                        <p class="text-gray-600">@{{ profile.username }}</p>
+                        <a href="{{ profile.profileUrl }}" target="_blank" class="text-purple-600 hover:underline text-sm">View Profile</a>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-700">
-                    <p><strong>Followers:</strong> {{ "{:,}".format(profile.followersCount | default(0)) }}</p>
-                    <p><strong>Following:</strong> {{ "{:,}".format(profile.followsCount | default(0)) }}</p>
-                    <p class="col-span-full"><strong>Bio:</strong> {{ profile.bio or 'N/A' }}</p>
+                <div class="grid grid-cols-2 gap-4 text-gray-700 mb-4">
+                    <div>
+                        <p class="font-semibold">Followers:</p>
+                        <p class="text-lg">{{ "{:,.0f}".format(profile.followersCount) }}</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Following:</p>
+                        <p class="text-lg">{{ "{:,.0f}".format(profile.followsCount) }}</p>
+                    </div>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-md">
+                    <p class="font-semibold text-purple-800">Bio:</p>
+                    <p class="text-gray-700">{{ profile.bio if profile.bio else 'Not provided.' }}</p>
                 </div>
                 {% else %}
                 <p class="text-gray-600">Profile data could not be loaded.</p>
                 {% endif %}
             </div>
 
-            <!-- AI Analysis -->
-            <div class="mb-8 p-6 bg-green-50 rounded-lg shadow-inner">
-                <h3 class="text-2xl font-semibold text-green-700 mb-4">🧠 AI Opinion on Profile</h3>
-                <div class="flex flex-col items-center justify-center">
-                    <canvas id="scoreWheelCanvas" width="150" height="150" class="mx-auto mb-4"></canvas>
-                    <p class="text-center text-3xl font-bold text-purple-700 mb-4"><span id="overallScoreDisplay">{{ ai_overall_score }}</span>/10</p>
-                </div>
-                <p id="aiAnalysis" class="text-gray-800 leading-relaxed">{{ ai_analysis_text }}</p>
-            </div>
-
-            <!-- Recent Posts -->
-            <div class="mb-8">
-                <h3 class="text-2xl font-semibold text-gray-700 mb-4">📸 Recent Posts</h3>
-                <div id="postsContainer" class="grid grid-cols-1 gap-6">
-                    {% if latest_posts %}
-                        {% for post in latest_posts %}
-                        <div class="p-5 bg-gray-50 rounded-lg shadow-md border border-gray-200">
-                            <h4 class="text-xl font-bold text-gray-800 mb-2">Post {{ loop.index }}</h4>
-                            <p class="text-gray-600 mb-2">
-                                <a href="{{ post.url }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">
-                                    {{ post.url }}
-                                </a>
-                            </p>
-                            <p class="text-gray-700 mb-2"><strong>Caption:</strong> {{ (post.caption[:200] + '...') if post.caption else 'No caption available' }}</p>
-                            {% if post.hashtags %}
-                            <p class="text-gray-600 text-sm mt-2"><strong>Hashtags:</strong> #{{ ' #'.join(post.hashtags) }}</p>
-                            {% endif %}
-                            <p class="text-gray-700 mb-2"><strong>Likes:</strong> {{ "{:,}".format(post.likesCount | default(0)) }}</p>
-                            <p class="text-gray-700 mb-4"><strong>Total Comments:</strong> {{ "{:,}".format(post.commentsCount | default(0)) }}</p>
-
-                            {% if post.comments %}
-                            <div class="mt-4 p-4 bg-white rounded-lg border border-gray-100">
-                                <h5 class="text-lg font-semibold text-gray-700 mb-3">💬 Scraped Comments (First {{ post.comments|length }})</h5>
-                                <ul class="list-disc list-inside space-y-2">
-                                    {% for comment in post.comments %}
-                                    <li class="text-gray-700">
-                                        <strong class="text-purple-600">@{{ comment.ownerUsername }}:</strong> {{ comment.text }}
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                            {% else %}
-                            <p class="text-gray-500 italic">No detailed comments scraped for this post.</p>
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                    <p class="text-gray-600">No recent posts found or could not be loaded.</p>
-                    {% endif %}
-                </div>
-
-                <div class="text-center mt-8">
-                    <button
-                        onclick="window.location.href = '/';"
-                        class="bg-purple-600 text-white py-3 px-6 rounded-lg font-bold text-lg hover:bg-purple-700 transition-colors duration-300 shadow-md"
-                    >
-                        Analyze Another Profile
-                    </button>
-                </div>
-
-                <!-- Log Viewer Section -->
-                <div class="mt-8 p-6 bg-gray-100 rounded-lg shadow-inner">
-                    <h3 class="text-2xl font-semibold text-gray-700 mb-4">Developer Logs</h3>
-                    <input
-                        type="password"
-                        id="logCodeInput"
-                        placeholder="Enter secret code to view logs"
-                        class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 w-full mb-4"
-                    />
-                    <div id="logDisplayArea" class="hidden bg-gray-800 text-green-400 p-4 rounded-lg overflow-auto max-h-96 text-sm font-mono whitespace-pre-wrap">
-                        <!-- Logs will be displayed here -->
+            <!-- AI Opinion & Roadmap Section -->
+            <div class="bg-purple-50 p-6 rounded-lg shadow-inner mb-6">
+                <h3 class="text-2xl font-semibold text-purple-800 mb-4">🧠 AI Opinion & Growth Roadmap</h3>
+                {% if ai_analysis_text %}
+                    <div id="aiRoadmapContent" class="text-gray-800 leading-relaxed">
+                        {{ ai_analysis_text }}
                     </div>
-                </div>
-
+                    <div class="flex justify-center mt-6">
+                        <canvas id="scoreWheelCanvas" width="120" height="120" class="shadow-md rounded-full"></canvas>
+                    </div>
+                    <p id="overallScoreDisplay" class="hidden">{{ ai_overall_score }}</p>
+                {% else %}
+                    <p class="text-gray-600">AI analysis not available or could not be loaded.</p>
+                {% endif %}
             </div>
-        </div>
 
-        <!-- Link to the JavaScript file -->
-        <script src="{{ url_for('static', filename='script.js') }}"></script>
-    </body>
-    </html>
+            <div class="text-center mt-8">
+                <button
+                    onclick="window.location.href = '/';"
+                    class="bg-purple-600 text-white py-3 px-6 rounded-lg font-bold text-lg hover:bg-purple-700 transition-colors duration-300 shadow-md"
+                >
+                    Analyze Another Profile
+                </button>
+            </div>
+
+            <!-- Log Viewer Section -->
+            <div class="mt-8 p-6 bg-gray-100 rounded-lg shadow-inner">
+                <h3 class="text-2xl font-semibold text-gray-700 mb-4">Developer Logs</h3>
+                <input
+                    type="password"
+                    id="logCodeInput"
+                    placeholder="Enter secret code to view logs"
+                    class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 w-full mb-4"
+                />
+                <div id="logDisplayArea" class="hidden bg-gray-800 text-green-400 p-4 rounded-lg overflow-auto max-h-96 text-sm font-mono whitespace-pre-wrap">
+                    <!-- Logs will be displayed here -->
+                </div>
+                <button
+                    id="downloadLogsButton"
+                    class="mt-4 bg-gray-700 text-white py-2 px-4 rounded-lg font-bold text-sm hover:bg-gray-800 transition-colors duration-300 shadow-md hidden"
+                >
+                    Download Logs
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Link to the JavaScript file -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
