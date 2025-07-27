@@ -174,6 +174,172 @@ function drawScoreWheel(canvas, score) {
     ctx.fillText(score, centerX, centerY);
 }
 
+// Function to parse and render the AI roadmap text
+function renderAIRoadmap(aiAnalysisText, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) {
+        console.error(`Client: Container with ID '${containerId}' not found for AI roadmap rendering.`);
+        return;
+    }
+
+    // Clear previous content
+    container.innerHTML = '';
+    console.log("Client: Attempting to render AI Roadmap. Raw text:", aiAnalysisText); // Log raw text
+
+    const lines = aiAnalysisText.split('\n');
+    let currentSectionElement = null;
+    let currentListElement = null;
+
+    // Create a main container for the roadmap steps with relative positioning for arrows
+    const roadmapContainer = document.createElement('div');
+    roadmapContainer.className = 'relative flex flex-col items-center w-full'; // Full width, centered items
+    container.appendChild(roadmapContainer);
+
+    let sectionCounter = 0; // To track sections for arrow placement
+
+    lines.forEach((line, index) => {
+        try {
+            const trimmedLine = line.trim();
+            if (!trimmedLine) return;
+
+            // Overall Score and initial summary
+            if (trimmedLine.startsWith('**Overall Score:')) {
+                const scoreLine = trimmedLine.replace('**Overall Score:', '').trim();
+                const scoreElement = document.createElement('p');
+                scoreElement.className = 'text-xl font-bold text-purple-700 mb-4 text-center';
+                scoreElement.textContent = `Overall Score: ${scoreLine}`;
+                roadmapContainer.appendChild(scoreElement);
+                currentSectionElement = null;
+                currentListElement = null;
+            }
+            // Strengths to Leverage
+            else if (trimmedLine.startsWith('**Strengths to Leverage:**')) {
+                sectionCounter++;
+                currentSectionElement = document.createElement('div');
+                currentSectionElement.className = `roadmap-box bg-gray-50 p-4 rounded-lg shadow-md w-full md:w-3/4 lg:w-2/3 relative z-10 mb-8`; // Smaller width, centered
+                const title = document.createElement('h4');
+                title.className = 'text-xl font-semibold text-gray-700 mb-2';
+                title.textContent = 'Strengths to Leverage:';
+                currentSectionElement.appendChild(title);
+                currentListElement = document.createElement('ul');
+                currentListElement.className = 'list-disc list-inside text-gray-700 text-sm ml-4';
+                currentSectionElement.appendChild(currentListElement);
+                roadmapContainer.appendChild(currentSectionElement);
+                addArrow(roadmapContainer, sectionCounter); // Add arrow after this box
+            }
+            // Areas for Improvement & Actionable Roadmap (main header)
+            else if (trimmedLine.startsWith('**Areas for Improvement & Actionable Roadmap:**')) {
+                const title = document.createElement('h4');
+                title.className = 'text-2xl font-bold text-gray-800 mb-6 mt-8 text-center w-full';
+                title.textContent = 'Areas for Improvement & Actionable Roadmap:';
+                roadmapContainer.appendChild(title);
+                currentSectionElement = null;
+                currentListElement = null;
+            }
+            // Numbered roadmap sections (1. Content, 2. Engagement, 3. Profile)
+            else if (trimmedLine.match(/^\*\*(\d+)\. (.*?):\*\*/)) {
+                sectionCounter++;
+                const sectionMatch = trimmedLine.match(/^\*\*(\d+)\. (.*?):\*\*/);
+                const sectionNumber = sectionMatch[1];
+                const sectionTitle = sectionMatch[2];
+
+                currentSectionElement = document.createElement('div');
+                currentSectionElement.className = `roadmap-box p-4 rounded-lg shadow-md w-full md:w-3/4 lg:w-2/3 relative z-10 mb-8`; // Smaller width, centered
+
+                let bgColorClass = '';
+                let titleColorClass = '';
+                if (sectionNumber === '1') {
+                    bgColorClass = 'bg-blue-100';
+                    titleColorClass = 'text-blue-800';
+                } else if (sectionNumber === '2') {
+                    bgColorClass = 'bg-green-100';
+                    titleColorClass = 'text-green-800';
+                } else if (sectionNumber === '3') {
+                    bgColorClass = 'bg-yellow-100';
+                    titleColorClass = 'text-yellow-800';
+                }
+                currentSectionElement.classList.add(bgColorClass);
+
+                const title = document.createElement('h5');
+                title.className = `text-lg font-semibold mb-2 ${titleColorClass}`;
+                title.textContent = `${sectionNumber}. ${sectionTitle}:`;
+                currentSectionElement.appendChild(title);
+
+                // Add an introductory paragraph if present immediately after the heading
+                const nextLine = lines[index + 1] ? lines[index + 1].trim() : '';
+                if (nextLine && !nextLine.startsWith('- ') && !nextLine.startsWith('**')) {
+                    const introParagraph = document.createElement('p');
+                    introParagraph.className = 'text-sm text-gray-700 mb-2';
+                    introParagraph.textContent = nextLine;
+                    currentSectionElement.appendChild(introParagraph);
+                    lines[index + 1] = ''; // Mark as processed
+                }
+
+                currentListElement = document.createElement('ul');
+                currentListElement.className = 'list-disc list-inside text-gray-700 text-sm ml-4';
+                currentSectionElement.appendChild(currentListElement);
+                roadmapContainer.appendChild(currentSectionElement);
+                if (sectionCounter < 4) { // Add arrow after Content, Engagement, Profile sections
+                    addArrow(roadmapContainer, sectionCounter);
+                }
+            }
+            // Bullet points
+            else if (trimmedLine.startsWith('- ')) {
+                if (currentListElement) {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'mb-1';
+                    listItem.textContent = trimmedLine.substring(2).trim();
+                    currentListElement.appendChild(listItem);
+                } else {
+                    console.warn(`Client: Orphaned bullet point found at line ${index + 1}: "${trimmedLine}". Appending as paragraph.`);
+                    const p = document.createElement('p');
+                    p.className = 'text-gray-700 text-sm mb-1';
+                    p.textContent = trimmedLine;
+                    if (currentSectionElement) {
+                        currentSectionElement.appendChild(p);
+                    } else {
+                        roadmapContainer.appendChild(p);
+                    }
+                }
+            }
+            // General text/summary (e.g., overall summary after score, or text within a section)
+            else {
+                const p = document.createElement('p');
+                p.className = 'text-gray-700 text-sm mb-2';
+                p.textContent = trimmedLine;
+                if (currentListElement) {
+                    currentListElement.appendChild(p);
+                } else if (currentSectionElement) {
+                    currentSectionElement.appendChild(p);
+                } else {
+                    roadmapContainer.appendChild(p);
+                }
+            }
+        } catch (e) {
+            console.error(`Client: Error parsing line ${index + 1} of AI roadmap: "${line}". Error:`, e);
+            const errorP = document.createElement('p');
+            errorP.className = 'text-red-500 text-sm mb-2';
+            errorP.textContent = `[Parsing Error] Could not process: "${line}"`;
+            roadmapContainer.appendChild(errorP);
+        }
+    });
+}
+
+// Function to add a visual arrow between roadmap boxes
+function addArrow(container, count) {
+    const arrowDiv = document.createElement('div');
+    arrowDiv.className = 'w-1 bg-purple-400 h-12 relative z-0'; // Vertical line
+    arrowDiv.style.marginBottom = '0.5rem'; // Small gap
+    arrowDiv.style.marginTop = '-0.5rem'; // Overlap slightly with box margin
+
+    // Add arrowhead
+    const arrowhead = document.createElement('div');
+    arrowhead.className = 'w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-purple-400 absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full';
+    arrowDiv.appendChild(arrowhead);
+
+    container.appendChild(arrowDiv);
+}
+
 
 // Function to handle results display and log viewer on results.html
 function handleResultsPage() {
@@ -182,8 +348,6 @@ function handleResultsPage() {
     // Populate Overall Score and draw wheel
     const overallScoreDisplay = document.getElementById('overallScoreDisplay');
     const scoreWheelCanvas = document.getElementById('scoreWheelCanvas');
-    // The score is now passed directly from Flask to the Jinja2 template
-    // We need to get it from the HTML element's text content
     if (overallScoreDisplay && scoreWheelCanvas) {
         const score = parseInt(overallScoreDisplay.textContent, 10);
         if (!isNaN(score)) {
@@ -196,34 +360,64 @@ function handleResultsPage() {
         console.warn("Client: Score display elements not found on results page.");
     }
 
+    // Render the AI Roadmap
+    const aiAnalysisDiv = document.getElementById('aiRoadmapContent');
+    if (aiAnalysisDiv) {
+        const aiAnalysisText = aiAnalysisDiv.textContent;
+        aiAnalysisDiv.textContent = ''; // Clear the raw text content
+        renderAIRoadmap(aiAnalysisText, 'aiRoadmapContent');
+    } else {
+        console.error("Client: 'aiRoadmapContent' div not found to render AI analysis.");
+    }
+
+
     // --- Log Viewer Logic ---
     const logCodeInput = document.getElementById('logCodeInput');
     const logDisplayArea = document.getElementById('logDisplayArea');
+    const downloadLogsButton = document.getElementById('downloadLogsButton');
 
-    if (logCodeInput && logDisplayArea) {
+    if (logCodeInput && logDisplayArea && downloadLogsButton) {
         logCodeInput.addEventListener('input', () => {
             if (logCodeInput.value === SECRET_LOG_CODE) {
                 logDisplayArea.classList.remove('hidden');
+                downloadLogsButton.classList.remove('hidden');
                 const storedLogs = getLogs();
                 logDisplayArea.textContent = storedLogs.map(log =>
                     `[${log.timestamp}] [${log.type}] ${log.message}`
                 ).join('\n');
-                logCodeInput.value = ''; // Clear input after successful entry
+                logCodeInput.value = '';
             } else {
                 logDisplayArea.classList.add('hidden');
+                downloadLogsButton.classList.add('hidden');
             }
         });
+
+        downloadLogsButton.addEventListener('click', () => {
+            const logs = getLogs();
+            const logContent = logs.map(log =>
+                `[${log.timestamp}] [${log.type}] ${log.message}`
+            ).join('\n');
+
+            const blob = new Blob([logContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `instagram_analyzer_logs_${new Date().toISOString().slice(0,10)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
     } else {
-        console.warn("Client: Log viewer elements not found on results page.");
+        console.warn("Client: Log viewer elements or download button not found on results page.");
     }
 }
 
 
 // --- Initialize based on current page ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Check if the current page is index.html
     if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/') {
-        // Any specific client-side setup for index.html (e.g., displaying error messages from session)
         const errorMessageElement = document.getElementById('errorMessage');
         const storedErrorMessage = sessionStorage.getItem('errorMessage');
         if (storedErrorMessage) {
@@ -231,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 errorMessageElement.textContent = storedErrorMessage;
                 errorMessageElement.classList.remove('hidden');
             }
-            sessionStorage.removeItem('errorMessage'); // Clear it after displaying
+            sessionStorage.removeItem('errorMessage');
         }
     } else if (window.location.pathname.endsWith('loading.html') || window.location.pathname === '/loading') {
         handleLoadingPage();
